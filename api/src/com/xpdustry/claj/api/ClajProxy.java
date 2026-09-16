@@ -89,9 +89,8 @@ public class ClajProxy extends ProxyClient {
     receiver.handle(ClajPopupPacket.class, p -> postTask(provider::showPopup, this, p.message));
   }
 
-  /** This method must be used instead of others connect methods */
-  public void connect(String host, int port, Cons<ClajLink> created, Cons<CloseReason> closed,
-                      Cons<Throwable> failed) {
+  public void createRoom(String host, int port, Cons<ClajLink> created, Cons<CloseReason> closed,
+                         Cons<Throwable> failed) {
     try {
       connect(host, port);
       roomCreated = created;

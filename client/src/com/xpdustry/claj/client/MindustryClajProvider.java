@@ -84,6 +84,15 @@ public class MindustryClajProvider implements ClajProvider {
         connect.get(p);
       });
     }
+
+    // Save network errors for bug report
+    Cons<Throwable> last = ArcNet.errorHandler;
+    ArcNet.errorHandler = e -> {
+      ClajProxy proxy = Claj.get().proxies.get();
+      // Avoid saving every errors
+      if (proxy.isConnecting() || proxy.roomCreated()) ClajReport.addError(e);
+      last.get(e);
+    };
   }
 
   @Override
@@ -103,6 +112,7 @@ public class MindustryClajProvider implements ClajProvider {
 
   @Override
   public void handleProxyError(ClajProxy proxy, Throwable error) {
+    ClajReport.addError(error);
     if (proxy.roomCreated()) {
       proxy.quietErrors = true;
       postTask(() -> Vars.ui.showException("@claj.room.error", error));
