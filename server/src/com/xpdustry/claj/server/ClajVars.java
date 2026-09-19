@@ -87,6 +87,7 @@ public class ClajVars {
 
       System.out.println(Log.format(text, empty));
       if (ClajConfig.writeLogLevel.getOrDefault().ordinal() > level.ordinal()) return;
+      for (String code : ColorCodes.values) text = text.replace(code, "");
       logToFile(Log.formatColors(text, false, empty));
     };
 
