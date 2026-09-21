@@ -78,8 +78,8 @@ public class ClajReport {
          + (locale.equals("default") || locale.isEmpty() ? "" : "lang=" + locale + "&")
          + (type != null && !type.isEmpty() ? "type=" + URLEncoder.encode(type, Strings.ascii) + "&" : "")
          + (version != null && !version.isEmpty() ? "version=" + URLEncoder.encode(version, Strings.ascii) + "&" : "")
-         + (name != null && !name.isEmpty() ? "name=" + URLEncoder.encode(name, Strings.ascii) + "&" : "")
-         + (message != null && !message.isEmpty() ? "message=" + URLEncoder.encode(message, Strings.ascii) + "&" : "");
+         + (name != null && !name.isEmpty() ? "name=" + URLEncoder.encode(name, Strings.utf8) + "&" : "")
+         + (message != null && !message.isEmpty() ? "message=" + URLEncoder.encode(message, Strings.utf8) + "&" : "");
   }
 
 
