@@ -47,7 +47,8 @@ import com.xpdustry.claj.server.util.NioUtils;
 
 /** CLaJ server main class that doing all the stuff. */
 public class ClajRelay extends Server implements ApplicationListener, NetListenerFilter {
-  protected boolean closed, running;
+  protected boolean closed, stopping, running;
+  public boolean blockCreate, blockJoin;
   /** Port to bind this server. */
   public final int port;
   /** Read/Write speed. */
@@ -293,9 +294,10 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
   public CloseReason onRoomCreate(ClajConnection connection, int version, ClajType type) {
     if (connection == null) return CloseReason.error;
     // Ignore room creation requests when the server is closing
-    if (isClosed()) {
+    if (isClosed() || blockCreate) {
       rejectRoomCreation(connection, CloseReason.serverClosed);
-      warn("Connection @ tried to create a room but the server is closed.", connection.sid);
+      warn("Connection @ tried to create a room but " +
+           (blockCreate ? "new rooms are blocked." :"the server is closed."), connection.sid);
       return CloseReason.serverClosed;
 
     } else if (ClajConfig.maxRooms.get() > 0 && rooms.size >= ClajConfig.maxRooms.get()) {
@@ -378,10 +380,11 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
     room = getRoom(roomId);
 
     // Check room accessibility
-    if (isClosed()) {
+    if (isClosed() || blockJoin) {
       if (isRequest) rejectRoomJoin(connection, room, roomId, RejectReason.serverClosing);
       else connection.close(DcReason.error);
-      warn("Connection @ tried to join the room @ but the server is closed.", connection.sid,
+      warn("Connection @ tried to join the room @ but "+
+           (blockJoin ? "joins are blocked." : "the server is closed."), connection.sid,
            room == null ? Strings.longToBase64(roomId) : room.sid);
       return RejectReason.serverClosing;
 
@@ -639,8 +642,8 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
   /** At this point it's too late to notify closure. */
   @Override
   public void dispose() {
-    if (!closed) {
-      closed = true;
+    if (!stopping) {
+      stopping = closed = true;
       Events.fire(new ServerStoppingEvent(false));
       clearAndStop();
     }
@@ -673,10 +676,10 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
 
   @Override
   public void run() {
-    closed = false;
+    closed = stopping = false;
     running = true;
     try { super.run(); }
-    finally { running = false; }
+    finally { running = stopping = false; }
   }
 
   @Override
@@ -684,11 +687,11 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
   public void stop(boolean notify) { stop(notify, null); }
   public void stop(Runnable stopped) { stop(true, stopped); }
   public void stop(boolean notify, Runnable stopped) {
-    if (closed) {
+    if (stopping) {
       clearAndStop();
       return;
     }
-    closed = true;
+    stopping = closed = true;
     if (!notify) {
       clearAndStop();
       if (stopped != null) stopped.run();
@@ -716,8 +719,13 @@ public class ClajRelay extends Server implements ApplicationListener, NetListene
     super.stop();
   }
 
+  /** This doesn't means the server is stopped. */
   public boolean isClosed() {
-    return closed;
+    return closed || stopping || !running;
+  }
+
+  public void setClose(boolean close) {
+    closed = close;
   }
 
   public boolean isHosted() {

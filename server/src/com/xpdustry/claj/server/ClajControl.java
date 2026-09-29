@@ -145,6 +145,41 @@ public class ClajControl extends CommandHandler implements ApplicationListener {
                state.totalTransfertUpload, state.totalTransfertDownload);
     });
 
+    register("state", "[close|joins|rooms] [on|off]", "Set node state.", args -> {
+      if (args.length == 0) {
+        Log.info("Node is @.", ClajVars.relay.isClosed() ? "closed" : "open");
+        Log.info("New rooms are @.", ClajVars.relay.blockCreate ? "denied" : "allowed");
+        Log.info("Room joins are @.", ClajVars.relay.blockJoin ? "denied" : "allowed");
+        return;
+      }
+
+      boolean close = false, joins = false, rooms = false, on = false;
+      switch (args[0]) {
+        case "close" -> close = true;
+        case "joins" -> joins = true;
+        case "rooms" -> rooms = true;
+        default -> {
+          Log.err("Invalid argument! Must be 'close', 'joins', 'rooms', or nothing.");
+          return;
+        }
+      }
+      if (args.length == 1 || !(on = Strings.isTrue(args[1])) && !Strings.isFalse(args[1])) {
+        Log.err((args.length == 1 ? "Missing" : "Invalid") + " argument! Must be 'on' or 'off'.");
+        return;
+      }
+
+      if (close) {
+        ClajVars.relay.setClose(on);
+        Log.info("Server @ to new connections and rooms.", on ? "closed" : "opened");
+      } else if (joins) {
+        ClajVars.relay.blockJoin = !on;
+        Log.info("New room creation requests will be @.", on ? "allowed" : "denied");
+      } else if (rooms) {
+        ClajVars.relay.blockCreate = !on;
+        Log.info("Future room join requests will be @.", on ? "allowed" : "denied");
+      }
+    });
+
     register("gc", "Trigger a garbage collection.", args -> {
       long pre = Core.app.getJavaHeap();
       System.gc();
@@ -214,7 +249,7 @@ public class ClajControl extends CommandHandler implements ApplicationListener {
         });
 
       } else {
-        Log.err("Invalid argument! Must be 'status' or nothing.");
+        Log.err("Invalid argument! Must be 'info' or nothing.");
       }
     });
 /*TODO
